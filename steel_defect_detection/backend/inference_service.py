@@ -53,6 +53,8 @@ class InferenceService:
         strip_position: str = None,
         save_to_db: bool = True,
         model_mode: str = "ensemble",
+        *args,
+        **kwargs,
     ) -> dict:
         """
         Execute full end-to-end inspection pipeline on uploaded image bytes.
@@ -155,7 +157,16 @@ class InferenceService:
             "image_dimensions": {"width": w, "height": h},
         }
 
-    def _heuristic_or_ground_truth_detect(self, image: np.ndarray, filename: str, w: int, h: int) -> list[FusedDetection]:
+    def _heuristic_or_ground_truth_detect(
+        self,
+        image: np.ndarray,
+        filename: str,
+        w: int,
+        h: int,
+        model_mode: str = "ensemble",
+        *args,
+        **kwargs,
+    ) -> list[FusedDetection]:
         """Ground-truth lookup from benchmark labels or computer vision texture analysis."""
         stem = Path(filename).stem
         root = Path(__file__).resolve().parent.parent
