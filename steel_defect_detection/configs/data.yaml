@@ -1,0 +1,18 @@
+# YOLO dataset configuration for NEU-DET
+# Use absolute path resolution for reliable training
+path: c:/Users/lipib/Downloads/stainless spark/NEU-DET/steel_defect_detection/data/yolo_format
+train: images/train
+val: images/val
+# test split removed; using validation for model selection
+
+# 6 NEU-DET defect classes
+names:
+  0: crazing
+  1: inclusion
+  2: patches
+  3: pitted_surface
+  4: rolled-in_scale
+  5: scratches
+
+nc: 6
+

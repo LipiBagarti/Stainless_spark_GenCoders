@@ -1,0 +1,150 @@
+# Central configuration for preprocessing, decision engine, ensemble, and deployment.
+# NOTE: values marked "PLACEHOLDER" are design assumptions and must be replaced
+# with real Jindal production data before this system is used beyond a PoC/demo.
+
+# ============================================================================
+# MODEL PATHS
+# ============================================================================
+model:
+  yolo_weights: "models/yolo_best.pt"                    # PLACEHOLDER
+  faster_rcnn_weights: "models/faster_rcnn_best.pt"      # PLACEHOLDER
+  rtdetr_weights: "models/rtdetr_best.pt"                # PLACEHOLDER
+  classifier_weights: "models/efficientnet_b0_classifier.pt"  # PLACEHOLDER
+  confidence_threshold: 0.35
+  iou_threshold: 0.45
+
+# ============================================================================
+# INFERENCE MODE
+# ============================================================================
+inference:
+  mode: "ensemble"    # "ensemble" (4-model) or "yolo_only" (single YOLO, fast fallback)
+
+# ============================================================================
+# ENSEMBLE CONFIGURATION (WBF)
+# ============================================================================
+# Model weights for Weighted Boxes Fusion.
+# These are NOT confidence thresholds — they control each model's contribution
+# to the fused result. Tune on validation data using training/evaluate.py.
+ensemble:
+  yolo_weight: 1.0              # PLACEHOLDER — tune after training all 3 detectors
+  faster_rcnn_weight: 1.0       # PLACEHOLDER
+  rtdetr_weight: 1.0            # PLACEHOLDER
+  iou_threshold: 0.55           # PLACEHOLDER — WBF IoU threshold for merging boxes
+  skip_box_threshold: 0.01      # WBF minimum confidence to consider a box
+
+# ============================================================================
+# CONFIDENCE FUSION (detector + classifier)
+# ============================================================================
+# How to combine the fused detector confidence with EfficientNet classification confidence.
+# final_confidence = detector_weight * detector_conf + classifier_weight * classifier_conf
+confidence_fusion:
+  detector_weight: 0.6          # PLACEHOLDER — tune experimentally
+  classifier_weight: 0.4        # PLACEHOLDER
+
+# ============================================================================
+# CLASSIFIER (EfficientNet-B0 second-stage)
+# ============================================================================
+classifier:
+  enabled: true
+  crop_padding_fraction: 0.1    # 10% padding around bbox when cropping for classification
+  input_size: 224               # EfficientNet-B0 input resolution
+
+# ============================================================================
+# PREPROCESSING
+# ============================================================================
+preprocessing:
+  resize: [640, 640]
+  grayscale: true
+  apply_clahe: true
+  clahe_clip_limit: 2.0
+  clahe_tile_grid_size: [8, 8]
+  denoise: true
+  denoise_method: "median"
+  denoise_strength: 3
+
+# ============================================================================
+# PER-CLASS CONFIDENCE THRESHOLDS
+# ============================================================================
+# Applied AFTER ensemble fusion. Defaults are placeholders — tune per class
+# using the threshold-sweep in training/evaluate.py.
+confidence_thresholds:
+  crazing: 0.35
+  inclusion: 0.35
+  patches: 0.35
+  pitted_surface: 0.35
+  rolled-in_scale: 0.35
+  scratches: 0.35
+  default: 0.35
+
+# ============================================================================
+# DECISION ENGINE
+# ============================================================================
+decision_engine:
+  min_defect_area_px: 100       # PLACEHOLDER — reject boxes smaller than this
+  roi:
+    enabled: false
+    x_min: 0.0
+    x_max: 1.0
+    y_min: 0.0
+    y_max: 1.0
+  temporal_confirmation:
+    enabled: true
+    min_consecutive_frames: 2   # PLACEHOLDER
+    iou_match_threshold: 0.3
+
+# ============================================================================
+# SEVERITY RULES
+# ============================================================================
+severity_rules:
+  enabled: true
+  area_thresholds_px:
+    low: 500
+    medium: 2000
+    high: 5000
+  high_severity_classes: ["inclusion", "rolled-in_scale"]   # PLACEHOLDER
+  action_map:
+    low: "log"
+    medium: "operator_alert"
+    high: "mark_reject"
+    critical: "escalate"
+
+# ============================================================================
+# PLC INTEGRATION
+# ============================================================================
+plc_integration:
+  enabled: false
+  protocol: "opc-ua"
+  payload_fields:
+    - "defect_type"
+    - "detector_confidence"
+    - "classifier_confidence"
+    - "final_confidence"
+    - "severity"
+    - "model_agreement"
+    - "strip_position"
+    - "timestamp"
+    - "action"
+
+# ============================================================================
+# DATABASE
+# ============================================================================
+database:
+  enabled: true
+  path: "data/inspections.db"
+
+# ============================================================================
+# BACKEND (FastAPI)
+# ============================================================================
+backend:
+  host: "0.0.0.0"
+  port: 8000
+
+# ============================================================================
+# DEPLOYMENT
+# ============================================================================
+deployment:
+  target_device: "jetson_or_gpu_pc"
+  export_precision: "fp16"
+  strip_speed_m_per_min: null   # PLACEHOLDER
+  camera_fov_mm: null           # PLACEHOLDER
+  frame_overlap_fraction: null  # PLACEHOLDER
