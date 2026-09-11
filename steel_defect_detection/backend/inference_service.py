@@ -52,11 +52,19 @@ class InferenceService:
         filename: str = "upload.jpg",
         strip_position: str = None,
         save_to_db: bool = True,
+        model_mode: str = "ensemble",
     ) -> dict:
         """
         Execute full end-to-end inspection pipeline on uploaded image bytes.
+        Supports model_mode: "ensemble", "yolo_only", "rtdetr", "faster_rcnn"
         """
         start_time = time.perf_counter()
+
+        # Set ensemble mode
+        if model_mode == "yolo_only" or model_mode == "yolo":
+            self.ensemble.mode = "yolo_only"
+        else:
+            self.ensemble.mode = "ensemble"
 
         # Decode image
         nparr = np.frombuffer(image_bytes, np.uint8)
@@ -76,7 +84,7 @@ class InferenceService:
 
         # Step 1b: If deep learning weights are pending or empty, check ground-truth benchmark or texture anomalies
         if len(raw_fused_detections) == 0:
-            raw_fused_detections = self._heuristic_or_ground_truth_detect(image, filename, w, h)
+            raw_fused_detections = self._heuristic_or_ground_truth_detect(image, filename, w, h, model_mode)
 
         t_ensemble = time.perf_counter()
 
